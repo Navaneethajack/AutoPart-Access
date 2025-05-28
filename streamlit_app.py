@@ -7,12 +7,12 @@ import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 import base64
 
-# 🌿 Custom 3-Image Loader Function
+# 🌿 Custom 3-Image Loader Function (Updated for repo-based assets folder)
 def show_leaf_loader(placeholder):
     image_paths = [
-        r'C:\\Users\\Jeeva\\Pictures\\Saved Pictures\\out.png',
-        r'C:\\Users\\Jeeva\\Pictures\\Saved Pictures\\center.png',
-        r'C:\\Users\\Jeeva\\Pictures\\Saved Pictures\\small.png'
+        os.path.join("assets", "loader1.gif"),
+        os.path.join("assets", "loader2.gif"), 
+        os.path.join("assets", "loader3.gif") 
     ]
     base64_images = []
     for path in image_paths:
