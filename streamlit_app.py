@@ -7,18 +7,22 @@ import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 import base64
 
-# 🌿 Custom 3-Image Loader Function (Updated for repo-based assets folder)
 def show_leaf_loader(placeholder):
     image_paths = [
         os.path.join("assets", "loader1.gif"),
-        os.path.join("assets", "loader2.gif"), 
-        os.path.join("assets", "loader3.gif") 
+        os.path.join("assets", "loader2.gif"),
+        os.path.join("assets", "loader3.gif")
     ]
+    
     base64_images = []
     for path in image_paths:
-        with open(path, 'rb') as f:
-            base64_images.append(base64.b64encode(f.read()).decode())
-
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                base64_images.append(base64.b64encode(f.read()).decode())
+        else:
+            st.warning(f"Missing image file: {path}")
+            base64_images.append("")  # Placeholder if missing
+    
     placeholder.markdown(f"""
     <style>
         .loader-wrapper {{
@@ -58,13 +62,13 @@ def show_leaf_loader(placeholder):
     </style>
     <div class="loader-wrapper">
         <div class="outer">
-            <img src="data:image/png;base64,{base64_images[0]}" width="100%" height="100%" />
+            {"<img src='data:image/gif;base64," + base64_images[0] + "' width='100%' height='100%' />" if base64_images[0] else ""}
         </div>
         <div class="middle">
-            <img src="data:image/png;base64,{base64_images[1]}" width="100%" height="100%" />
+            {"<img src='data:image/gif;base64," + base64_images[1] + "' width='100%' height='100%' />" if base64_images[1] else ""}
         </div>
         <div class="inner">
-            <img src="data:image/png;base64,{base64_images[2]}" width="100%" height="100%" />
+            {"<img src='data:image/gif;base64," + base64_images[2] + "' width='100%' height='100%' />" if base64_images[2] else ""}
         </div>
     </div>
     """, unsafe_allow_html=True)
