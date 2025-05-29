@@ -1,3 +1,4 @@
+
 import streamlit as st
 import ollama
 import json
@@ -7,72 +8,44 @@ import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 import base64
 
-def show_leaf_loader(placeholder):
-    image_paths = [
-        os.path.join("assets", "loader1.gif"),
-        os.path.join("assets", "loader2.gif"),
-        os.path.join("assets", "loader3.gif")
-    ]
-    
-    base64_images = []
-    for path in image_paths:
-        if os.path.exists(path):
-            with open(path, 'rb') as f:
-                base64_images.append(base64.b64encode(f.read()).decode())
-        else:
-            st.warning(f"Missing image file: {path}")
-            base64_images.append("")  # Placeholder if missing
-    
-    placeholder.markdown(f"""
+# ⬇️ Your loader function
+def show_loader(placeholder):
+    placeholder.markdown("""
     <style>
-        .loader-wrapper {{
+        .loader-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 300px;
             position: relative;
-        }}
-        .outer, .middle, .inner {{
-            position: absolute;
+        }
+        .ring {
+            border: 10px solid ;
+            border-top: 10px solid #4CAF50;
             border-radius: 50%;
-        }}
-        .outer {{
-            width: 300px;
-            height: 300px;
-            animation: rotateClockwise 4s linear infinite;
-        }}
-        .middle {{
-            width: 200px;
-            height: 200px;
-            animation: rotateAntiClockwise 3s linear infinite;
-        }}
-        .inner {{
+            position: absolute;
+            animation: spin 2s linear infinite;
+        }
+        .ring1 {
+            width: 120px;
+            height: 120px;
+        }
+        .ring2 {
             width: 80px;
             height: 80px;
-            animation: rotateClockwise 4s linear infinite;
-        }}
-        @keyframes rotateClockwise {{
-            0% {{ transform: rotate(0deg); }}
-            100% {{ transform: rotate(360deg); }}
-        }}
-        @keyframes rotateAntiClockwise {{
-            0% {{ transform: rotate(360deg); }}
-            100% {{ transform: rotate(0deg); }}
-        }}
+            border-top: 10px solid #2196F3;
+            animation-duration: 1.5s;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
     <div class="loader-wrapper">
-        <div class="outer">
-            {"<img src='data:image/gif;base64," + base64_images[0] + "' width='100%' height='100%' />" if base64_images[0] else ""}
-        </div>
-        <div class="middle">
-            {"<img src='data:image/gif;base64," + base64_images[1] + "' width='100%' height='100%' />" if base64_images[1] else ""}
-        </div>
-        <div class="inner">
-            {"<img src='data:image/gif;base64," + base64_images[2] + "' width='100%' height='100%' />" if base64_images[2] else ""}
-        </div>
+        <div class="ring ring1"></div>
+        <div class="ring ring2"></div>
     </div>
     """, unsafe_allow_html=True)
-
 # 🔍 Query LLaMA 3
 def parse_query_llama3(query):
     prompt = f"""
@@ -155,7 +128,7 @@ user_query = st.text_input("Enter your automobile part request:")
 
 if user_query:
     loader_placeholder = st.empty()
-    show_leaf_loader(loader_placeholder)
+    show_loader(loader_placeholder)
 
     parsed = parse_query_llama3(user_query)
     query = f"{parsed['part_type']} for {parsed['vehicle_model']}"
@@ -187,3 +160,4 @@ if user_query:
         st.dataframe(optimal_df)
     else:
         st.warning("No suitable products found.")
+
