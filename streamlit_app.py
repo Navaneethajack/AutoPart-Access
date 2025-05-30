@@ -6,6 +6,7 @@ import os
 import random
 import pandas as pd
 import requests
+import ollama
 
 # 🔄 Loader Animation
 def show_loader(placeholder):
