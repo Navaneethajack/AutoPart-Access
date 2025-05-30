@@ -1,4 +1,3 @@
-
 import streamlit as st
 import ollama
 import json
@@ -7,6 +6,8 @@ import hashlib
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 import base64
+import random
+import urllib.parse
 
 # ⬇️ Your loader function
 def show_loader(placeholder):
@@ -72,15 +73,31 @@ def parse_query_llama3(query):
         print("LLaMA 3 Parsing Error:", e)
         return {"part_type": "", "vehicle_model": "", "price_range": [0, 999999]}
 
-# 🧠 Decision Tree Builder
-def build_decision_tree(data):
-    X = data[["price", "rating"]]
-    y = data["suitability"]
-    clf = DecisionTreeClassifier()
-    clf.fit(X, y)
-    return clf
+# 🔌 Get Site-specific Search URL
+def get_search_url(site, query):
+    encoded_query = urllib.parse.quote_plus(query)
+    site = site.lower()
+    domain_map = {
+        "flipkart": f"https://www.flipkart.com/search?q={encoded_query}",
+        "amazon": f"https://www.amazon.in/s?k={encoded_query}",
+        "snapdeal": f"https://www.snapdeal.com/search?keyword={encoded_query}",
+        "ebay": f"https://www.ebay.com/sch/i.html?_nkw={encoded_query}",
+        "indiamart": f"https://dir.indiamart.com/search.mp?ss={encoded_query}",
+        "boodmo": f"https://boodmo.com/catalog/search/?q={encoded_query}",
+        "pricerunner": f"https://www.pricerunner.com/search?q={encoded_query}",
+        "gomechanic": f"https://gomechanic.in/spares?q={encoded_query}",
+        "cardekho": f"https://www.cardekho.com/cars?q={encoded_query}",
+        "autodoc": f"https://www.autodoc.co.uk/search?keyword={encoded_query}",
+        "motointegrator": f"https://www.motointegrator.com/search?keyword={encoded_query}",
+        "partslink24": f"https://www.partslink24.com/search?q={encoded_query}",
+        "tecalliance": f"https://www.tecalliance.com/en/solutions/tecdoc-catalog?q={encoded_query}",
+        "camelcamelcamel": f"https://camelcamelcamel.com/search?sq={encoded_query}"
+    }
 
-# 🕸️ Caching Site Scraper
+    general_query = f"{site.rstrip('/')}/search?q={encoded_query}"
+    return domain_map.get(site, general_query)
+
+# 📦 Scraper with Caching (Simulated)
 def scrape_site(query, site):
     filename = f"cache/{hashlib.md5((query + site).encode()).hexdigest()}.json"
     os.makedirs("cache", exist_ok=True)
@@ -90,9 +107,9 @@ def scrape_site(query, site):
 
     result = [{
         "name": f"{query} - Sample from {site}",
-        "price": 1500 + hash(site) % 500,
-        "rating": 4.0 + (hash(site) % 10) * 0.01,
-        "link": site
+        "price": random.randint(1200, 2000),
+        "rating": round(random.uniform(3.8, 4.5), 2),
+        "link": get_search_url(site, query)
     }]
 
     with open(filename, "w") as f:
@@ -100,26 +117,22 @@ def scrape_site(query, site):
 
     return result
 
-# 🏆 Select Best Product
+# 🏆 Optimal Product Selector
 def choose_optimal(results):
     df = pd.DataFrame(results)
-    df["suitability"] = [1 if price <= df["price"].min() and rating >= df["rating"].max()
-                         else 0 for price, rating in zip(df["price"], df["rating"])]
-    clf = build_decision_tree(df)
-    df["pred"] = clf.predict(df[["price", "rating"]])
-    df_sorted = df[df["pred"] == 1].sort_values(by=["price", "rating"], ascending=[True, False])
-    return df_sorted.head(1)
+    if df.empty:
+        return pd.DataFrame()
 
-# 🌐 Supported Sites
+    df["norm_price"] = (df["price"] - df["price"].min()) / (df["price"].max() - df["price"].min() + 1e-6)
+    df["norm_rating"] = (df["rating"] - df["rating"].min()) / (df["rating"].max() - df["rating"].min() + 1e-6)
+    df["score"] = (1 - df["norm_price"]) * 0.6 + df["norm_rating"] * 0.4
+
+    return df.sort_values(by="score", ascending=False).head(1)
+
+# 🌐 Supported Sites (by identifier)
 supported_sites = [
-    "https://www.amazon.in/", "https://www.ebay.com/", "https://www.rockauto.com/",
-    "https://www.autozone.com/", "https://shop.advanceautoparts.com/", "https://www.napaonline.com/",
-    "https://www.summitracing.com/", "https://www.eurocarparts.com/", "https://www.halfords.com/",
-    "https://www.autodoc.co.uk/", "https://www.motointegrator.com/", "https://boodmo.com/",
-    "https://gomechanic.in/", "https://www.cardekho.com/", "https://www.supercheapauto.com.au/",
-    "https://www.repco.com.au/", "https://www.partslink24.com/",
-    "https://www.tecalliance.com/en/solutions/tecdoc-catalog", "https://www.pricerunner.com/",
-    "https://camelcamelcamel.com/"
+    "amazon", "ebay", "flipkart", "snapdeal", "indiamart", "boodmo", "pricerunner", "gomechanic",
+    "cardekho", "autodoc", "motointegrator", "supercheapauto", "repco", "partslink24", "tecalliance", "camelcamelcamel"
 ]
 
 # 🖼️ Streamlit UI
@@ -137,13 +150,12 @@ if user_query:
     for site in supported_sites:
         all_results.extend(scrape_site(query, site))
 
-    optimal_df = choose_optimal(all_results)
-    results_df = pd.DataFrame(all_results)
-
     loader_placeholder.empty()
 
-    st.write("🔍 **Search Query**:", query)
+    results_df = pd.DataFrame(all_results)
+    optimal_df = choose_optimal(all_results)
 
+    st.write("🔍 **Search Query:**", query)
     st.write("📦 **All Search Results:**")
     st.dataframe(results_df)
 
@@ -157,7 +169,6 @@ if user_query:
 
     st.write("✅ **Optimal Recommendation:**")
     if not optimal_df.empty:
-        st.dataframe(optimal_df)
+        st.dataframe(optimal_df[["name", "price", "rating", "link"]])
     else:
         st.warning("No suitable products found.")
-
